@@ -1,12 +1,8 @@
 import React, {Component} from 'react'
-import PropTypes from 'prop-types'
 import axios from 'axios'
-
+import  PubSub from 'pubsub-js'
 class Main extends Component {
 
-  static propTypes = {
-    searchName: PropTypes.string.isRequired
-  }
 
   state = {
     initView: true,
@@ -15,28 +11,29 @@ class Main extends Component {
     errorMsg: null
   }
 
-  componentWillReceiveProps (newProps) {
-    const { searchName } = newProps
-    this.setState({
-      initView: false,
-      loading: true
-    })
-
-    const url =  `http://api.github.com/search/users?q=${searchName}`
-    // const url = `https://search.bilibili.com/all/?keyword=uid${searchName}&from_source=nav_search_new`
-
-    axios.get(url).then((res) => {
-        const data = res.data
-        console.log(data)
-        // const users = data.items.map(item => {
-        //   return { name: item.login, url: item.html_url, avatarUrl: item.avatar_url }
-        // })
-        // this.setState({loading: false, users})
-      }).catch((err) => {
-        this.setState({loading: false, errorMsg: err.message})
-        console.log(err)
+  componentDidMount () {
+    PubSub.subscribe('search',(msg,searchName) => {
+      console.log(msg,searchName);
+      this.setState({
+        initView: false,
+        loading: true
       })
+      const url =  `http://api.github.com/search/users?q=${searchName}`
+      // const url = `https://search.bilibili.com/all/?keyword=uid${searchName}&from_source=nav_search_new`
+      axios.get(url).then((res) => {
+          const data = res.data
+          console.log(data)
+          const users = data.items.map(item => {
+            return { name: item.login, url: item.html_url, avatarUrl: item.avatar_url }
+          })
+          this.setState({loading: false, users})
+        }).catch((err) => {
+          this.setState({loading: false, errorMsg: err.message})
+          console.log(err)
+        })
+    })
   }
+
 
   render () {
     const {initView,loading,users,errorMsg} = this.state
